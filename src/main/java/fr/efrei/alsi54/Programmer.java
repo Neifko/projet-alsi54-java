@@ -1,6 +1,4 @@
-package fr.efrei.alsi54.model;
-
-import fr.efrei.alsi54.Database;
+package fr.efrei.alsi54;
 
 import java.util.Date;
 

@@ -1,5 +1,5 @@
-create database if not exists gestion_projet_vm;
-use gestion_projet_vm;
+create database if not exists PROG_BD;
+use PROG_BD;
 
 create table if not exists programmers
 (

@@ -1,17 +1,15 @@
 package fr.efrei.alsi54;
 
-import fr.efrei.alsi54.model.Programmer;
+import java.util.List;
 
-import java.util.ArrayList;
-
-public class ActionsBDDImpl implements ActionsBDD{
+public class ActionsBDDImpl implements ActionsBDD {
     @Override
-    public ArrayList<Programmer> getProgrammers() {
+    public List<Programmer> getAllProgrammers() {
         return null;
     }
 
     @Override
-    public Programmer getProgrammer(int id) {
+    public Programmer getProgrammerById(int id) {
         return null;
     }
 
@@ -21,22 +19,22 @@ public class ActionsBDDImpl implements ActionsBDD{
     }
 
     @Override
-    public Programmer addProgrammer(Programmer programmer) {
+    public int addProgrammer(Programmer programmer) {
+        return 0;
+    }
+
+    @Override
+    public void updateSalary(int programmerId, float newSalary) {
+
+    }
+
+    @Override
+    public List<Project> getAllProjects() {
         return null;
     }
 
     @Override
-    public void updateProgrammer(Programmer programmer) {
-
-    }
-
-    @Override
-    public void getProjects() {
-
-    }
-
-    @Override
-    public ArrayList<Programmer> getProgrammersByProject(int projectId) {
+    public List<Programmer> getProgrammersByProject(int projectId) {
         return null;
     }
 }
