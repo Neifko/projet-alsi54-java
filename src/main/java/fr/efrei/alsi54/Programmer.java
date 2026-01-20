@@ -1,20 +1,19 @@
 package fr.efrei.alsi54;
 
-import java.util.Date;
-
 public class Programmer {
     private int id;
     private String firstName;
     private String lastName;
     private String address;
     private String username;
-    private Programmer manager;
+    private String manager;
     private String hobby;
-    private Date birthdate;
+    private int birthYear;
     private float salary;
     private float bonus;
 
-    public Programmer(int id, String firstName,String lastName, String address, String username, Programmer manager, String hobby, Date birthdate, float salary, float bonus) {
+    public Programmer(int id, String lastName, String firstName, String address, String username, String manager,
+            String hobby, int birthYear, float salary, float bonus) {
         this.id = id;
         this.lastName = lastName;
         this.firstName = firstName;
@@ -22,7 +21,20 @@ public class Programmer {
         this.username = username;
         this.manager = manager;
         this.hobby = hobby;
-        this.birthdate = birthdate;
+        this.birthYear = birthYear;
+        this.salary = salary;
+        this.bonus = bonus;
+    }
+
+    public Programmer(String lastName, String firstName, String address, String username, String manager, String hobby,
+            int birthYear, float salary, float bonus) {
+        this.lastName = lastName;
+        this.firstName = firstName;
+        this.address = address;
+        this.username = username;
+        this.manager = manager;
+        this.hobby = hobby;
+        this.birthYear = birthYear;
         this.salary = salary;
         this.bonus = bonus;
     }
@@ -35,12 +47,12 @@ public class Programmer {
         this.id = id;
     }
 
-    public String getName() {
+    public String getLastName() {
         return lastName;
     }
 
-    public void setName(String name) {
-        this.lastName = name;
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 
     public String getFirstName() {
@@ -67,11 +79,11 @@ public class Programmer {
         this.username = username;
     }
 
-    public Programmer getManager() {
+    public String getManager() {
         return manager;
     }
 
-    public void setManager(Programmer manager) {
+    public void setManager(String manager) {
         this.manager = manager;
     }
 
@@ -83,12 +95,12 @@ public class Programmer {
         this.hobby = hobby;
     }
 
-    public Date getBirthdate() {
-        return birthdate;
+    public int getBirthYear() {
+        return birthYear;
     }
 
-    public void setBirthdate(Date birthdate) {
-        this.birthdate = birthdate;
+    public void setBirthYear(int birthYear) {
+        this.birthYear = birthYear;
     }
 
     public float getSalary() {
@@ -109,17 +121,16 @@ public class Programmer {
 
     @Override
     public String toString() {
-        return "Programmer{" +
-                "id=" + id +
-                ", name='" + lastName + '\'' +
-                ", firstName='" + firstName + '\'' +
-                ", address='" + address + '\'' +
-                ", username='" + username + '\'' +
-                ", manager=" + manager +
-                ", hobby='" + hobby + '\'' +
-                ", birthdate=" + birthdate +
-                ", salary=" + salary +
-                ", bonus=" + bonus +
-                '}';
+        return "Id           : " + id + "\n" +
+                "Nom          : " + lastName + "\n" +
+                "Prénom       : " + firstName + "\n" +
+                "Adresse      : " + address + "\n" +
+                "Pseudo       : " + username + "\n" +
+                "Responsable  : " + manager + "\n" +
+                "Hobby        : " + hobby + "\n" +
+                "Naissance    : " + birthYear + "\n" +
+                "Salaire      : " + salary + "\n" +
+                "Prime        : " + bonus + "\n" +
+                "--------------------------------------------------";
     }
 }
