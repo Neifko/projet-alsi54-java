@@ -1,0 +1,340 @@
+package fr.efrei.alsi54;
+
+import javafx.application.Application;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.stage.Stage;
+
+import java.util.Optional;
+
+public class JavaFXApp extends Application {
+
+    private final ActionsBDD actions = new ActionsBDDImpl();
+
+    private BorderPane root;
+    private TableView<Programmer> tableProgrammers;
+    private ObservableList<Programmer> dataProgrammers;
+
+    private SplitPane projectView;
+    private TableView<Project> tableProjects;
+    private TableView<Programmer> tableTeam;
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+
+    @Override
+    public void start(Stage primaryStage) {
+        primaryStage.setTitle("Gestion Programmeurs 2025");
+
+        root = new BorderPane();
+        root.setStyle("-fx-font-family: 'Segoe UI', sans-serif; -fx-background-color: white;");
+
+        VBox sideMenu = createSideMenu();
+        root.setLeft(sideMenu);
+
+        initProgrammerView();
+        initProjectView();
+
+        showProgrammersView();
+
+        Scene scene = new Scene(root, 1000, 700);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    @Override
+    public void stop() throws Exception {
+        Database.getInstance().closeConnection();
+        super.stop();
+    }
+
+    private VBox createSideMenu() {
+        VBox menu = new VBox(15);
+        menu.setPadding(new Insets(20));
+        menu.setPrefWidth(200);
+        menu.setStyle("-fx-background-color: #2C3E50;");
+
+        Label lblTitle = new Label("DEV MANAGER");
+        lblTitle.setTextFill(Color.WHITE);
+        lblTitle.setFont(Font.font("Segoe UI", FontWeight.BOLD, 20));
+        lblTitle.setPadding(new Insets(0, 0, 20, 0));
+
+        Button btnProgrammers = createStyledButton("👥  Programmeurs");
+        Button btnProjects = createStyledButton("🚀  Projets");
+
+        Separator sep = new Separator();
+        sep.setOpacity(0.3);
+
+        Button btnAdd = createStyledButton("➕  Ajouter Prog.");
+        Button btnDelete = createStyledButton("🗑  Supprimer Prog.");
+        Button btnSalary = createStyledButton("💰  Modifier Salaire");
+
+        menu.getChildren().addAll(lblTitle, btnProgrammers, btnProjects, sep, btnAdd, btnDelete, btnSalary);
+
+        btnProgrammers.setOnAction(e -> {
+            loadProgrammers();
+            root.setCenter(tableProgrammers);
+        });
+
+        btnProjects.setOnAction(e -> {
+            loadProjects();
+            root.setCenter(projectView);
+        });
+
+        btnAdd.setOnAction(e -> {
+            root.setCenter(tableProgrammers);
+            showAddDialog();
+        });
+
+        btnDelete.setOnAction(e -> {
+            root.setCenter(tableProgrammers);
+            deleteSelectedProgrammer();
+        });
+
+        btnSalary.setOnAction(e -> {
+            root.setCenter(tableProgrammers);
+            showUpdateSalaryDialog();
+        });
+
+        return menu;
+    }
+
+    private Button createStyledButton(String text) {
+        Button btn = new Button(text);
+        btn.setMaxWidth(Double.MAX_VALUE);
+        btn.setAlignment(Pos.CENTER_LEFT);
+        btn.setPadding(new Insets(10, 15, 10, 15));
+        btn.setStyle(
+                "-fx-background-color: transparent; -fx-text-fill: #ECF0F1; -fx-font-size: 14px; -fx-cursor: hand;");
+
+        btn.setOnMouseEntered(e -> btn.setStyle(
+                "-fx-background-color: #34495E; -fx-text-fill: white; -fx-font-size: 14px; -fx-cursor: hand;"));
+        btn.setOnMouseExited(e -> btn.setStyle(
+                "-fx-background-color: transparent; -fx-text-fill: #ECF0F1; -fx-font-size: 14px; -fx-cursor: hand;"));
+
+        return btn;
+    }
+
+    private void showProgrammersView() {
+        loadProgrammers();
+        root.setCenter(tableProgrammers);
+    }
+
+    private void initProgrammerView() {
+        tableProgrammers = new TableView<>();
+        setupProgrammerColumns();
+    }
+
+    private void setupProgrammerColumns() {
+        TableColumn<Programmer, Integer> colId = new TableColumn<>("ID");
+        colId.setCellValueFactory(new PropertyValueFactory<>("id"));
+
+        TableColumn<Programmer, String> colNom = new TableColumn<>("Nom");
+        colNom.setCellValueFactory(new PropertyValueFactory<>("lastName"));
+
+        TableColumn<Programmer, String> colPrenom = new TableColumn<>("Prénom");
+        colPrenom.setCellValueFactory(new PropertyValueFactory<>("firstName"));
+
+        TableColumn<Programmer, String> colPseudo = new TableColumn<>("Pseudo");
+        colPseudo.setCellValueFactory(new PropertyValueFactory<>("username"));
+
+        TableColumn<Programmer, Float> colSalary = new TableColumn<>("Salaire");
+        colSalary.setCellValueFactory(new PropertyValueFactory<>("salary"));
+
+        TableColumn<Programmer, Float> colPrime = new TableColumn<>("Prime");
+        colPrime.setCellValueFactory(new PropertyValueFactory<>("bonus"));
+
+        TableColumn<Programmer, String> colManager = new TableColumn<>("Responsable");
+        colManager.setCellValueFactory(new PropertyValueFactory<>("manager"));
+
+        tableProgrammers.getColumns().addAll(colId, colNom, colPrenom, colPseudo, colSalary, colPrime, colManager);
+        tableProgrammers.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+    }
+
+    private void loadProgrammers() {
+        dataProgrammers = FXCollections.observableArrayList(actions.getAllProgrammers());
+        tableProgrammers.setItems(dataProgrammers);
+    }
+
+    private void initProjectView() {
+        tableProjects = new TableView<>();
+        TableColumn<Project, Integer> pId = new TableColumn<>("ID");
+        pId.setCellValueFactory(new PropertyValueFactory<>("id"));
+
+        TableColumn<Project, String> pName = new TableColumn<>("Nom du Projet");
+        pName.setCellValueFactory(new PropertyValueFactory<>("name"));
+
+        TableColumn<Project, String> pState = new TableColumn<>("État");
+        pState.setCellValueFactory(new PropertyValueFactory<>("state"));
+
+        TableColumn<Project, String> pStart = new TableColumn<>("Début");
+        pStart.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getStartDate().toString()));
+
+        tableProjects.getColumns().addAll(pId, pName, pState, pStart);
+        tableProjects.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+        tableTeam = new TableView<>();
+        TableColumn<Programmer, String> tNom = new TableColumn<>("Nom");
+        tNom.setCellValueFactory(new PropertyValueFactory<>("lastName"));
+        TableColumn<Programmer, String> tPrenom = new TableColumn<>("Prénom");
+        tPrenom.setCellValueFactory(new PropertyValueFactory<>("firstName"));
+        TableColumn<Programmer, String> tRole = new TableColumn<>("Pseudo");
+        tRole.setCellValueFactory(new PropertyValueFactory<>("username"));
+
+        tableTeam.getColumns().addAll(tNom, tPrenom, tRole);
+        tableTeam.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tableTeam.setPlaceholder(new Label("Sélectionnez un projet pour voir l'équipe"));
+
+        tableProjects.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                var team = actions.getProgrammersByProject(newVal.getId());
+                tableTeam.setItems(FXCollections.observableArrayList(team));
+            }
+        });
+
+        VBox topBox = new VBox(5, new Label("LISTE DES PROJETS"), tableProjects);
+        topBox.setPadding(new Insets(10));
+        VBox.setVgrow(tableProjects, Priority.ALWAYS);
+
+        VBox bottomBox = new VBox(5, new Label("ÉQUIPE DU PROJET SÉLECTIONNÉ"), tableTeam);
+        bottomBox.setPadding(new Insets(10));
+        VBox.setVgrow(tableTeam, Priority.ALWAYS);
+
+        projectView = new SplitPane();
+        projectView.setOrientation(javafx.geometry.Orientation.VERTICAL);
+        projectView.getItems().addAll(topBox, bottomBox);
+        projectView.setDividerPositions(0.5);
+    }
+
+    private void loadProjects() {
+        tableProjects.setItems(FXCollections.observableArrayList(actions.getAllProjects()));
+        tableTeam.getItems().clear();
+    }
+
+    private void deleteSelectedProgrammer() {
+        Programmer selected = tableProgrammers.getSelectionModel().getSelectedItem();
+        if (selected != null) {
+            Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+            confirm.setTitle("Confirmation");
+            confirm.setHeaderText("Supprimer " + selected.getFirstName() + " ?");
+            confirm.setContentText("Cette action est irréversible.");
+
+            if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+                actions.deleteProgrammer(selected.getId());
+                loadProgrammers();
+            }
+        } else {
+            showAlert("Erreur", "Veuillez sélectionner une ligne dans le tableau des programmeurs.");
+        }
+    }
+
+    private void showAddDialog() {
+        Dialog<Programmer> dialog = new Dialog<>();
+        dialog.setTitle("Nouveau Programmeur");
+        dialog.setHeaderText("Ajout d'un collaborateur");
+
+        ButtonType okBtn = new ButtonType("Valider", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(okBtn, ButtonType.CANCEL);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 50, 10, 10));
+
+        TextField nom = new TextField();
+        nom.setPromptText("Nom");
+        TextField prenom = new TextField();
+        prenom.setPromptText("Prénom");
+        TextField pseudo = new TextField();
+        TextField adresse = new TextField();
+        TextField manager = new TextField();
+        TextField hobby = new TextField();
+        TextField annee = new TextField();
+        annee.setPromptText("YYYY");
+        TextField salaire = new TextField();
+        TextField prime = new TextField();
+
+        grid.add(new Label("Nom *"), 0, 0);
+        grid.add(nom, 1, 0);
+        grid.add(new Label("Prénom *"), 0, 1);
+        grid.add(prenom, 1, 1);
+        grid.add(new Label("Pseudo *"), 0, 2);
+        grid.add(pseudo, 1, 2);
+        grid.add(new Label("Adresse"), 0, 3);
+        grid.add(adresse, 1, 3);
+        grid.add(new Label("Responsable"), 0, 4);
+        grid.add(manager, 1, 4);
+        grid.add(new Label("Hobby"), 0, 5);
+        grid.add(hobby, 1, 5);
+        grid.add(new Label("Année Naiss."), 0, 6);
+        grid.add(annee, 1, 6);
+        grid.add(new Label("Salaire"), 0, 7);
+        grid.add(salaire, 1, 7);
+        grid.add(new Label("Prime"), 0, 8);
+        grid.add(prime, 1, 8);
+
+        dialog.getDialogPane().setContent(grid);
+
+        dialog.setResultConverter(btn -> {
+            if (btn == okBtn) {
+                try {
+                    return new Programmer(
+                            nom.getText(), prenom.getText(), adresse.getText(), pseudo.getText(),
+                            manager.getText(), hobby.getText(),
+                            Integer.parseInt(annee.getText()),
+                            Float.parseFloat(salaire.getText()),
+                            Float.parseFloat(prime.getText()));
+                } catch (Exception e) {
+                    showAlert("Format Invalide", "Vérifiez les champs numériques (Année, Salaire, Prime).");
+                }
+            }
+            return null;
+        });
+
+        dialog.showAndWait().ifPresent(p -> {
+            actions.addProgrammer(p);
+            loadProgrammers();
+        });
+    }
+
+    private void showUpdateSalaryDialog() {
+        Programmer selected = tableProgrammers.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showAlert("Selection requise", "Sélectionnez un programmeur dans la liste.");
+            return;
+        }
+
+        TextInputDialog dialog = new TextInputDialog(String.valueOf(selected.getSalary()));
+        dialog.setTitle("Mise à jour Salaire");
+        dialog.setHeaderText("Nouveau salaire pour " + selected.getLastName().toUpperCase());
+        dialog.setContentText("Montant :");
+
+        dialog.showAndWait().ifPresent(val -> {
+            try {
+                actions.updateSalary(selected.getId(), Float.parseFloat(val));
+                loadProgrammers();
+            } catch (NumberFormatException e) {
+                showAlert("Erreur", "Montant invalide.");
+            }
+        });
+    }
+
+    private void showAlert(String title, String content) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(content);
+        alert.showAndWait();
+    }
+}
