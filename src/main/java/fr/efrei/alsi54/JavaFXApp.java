@@ -7,15 +7,27 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
+import javafx.scene.control.Separator;
+import javafx.scene.control.SplitPane;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.*;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
-
-import java.util.Optional;
 
 public class JavaFXApp extends Application {
 
@@ -159,7 +171,7 @@ public class JavaFXApp extends Application {
         colManager.setCellValueFactory(new PropertyValueFactory<>("manager"));
 
         tableProgrammers.getColumns().addAll(colId, colNom, colPrenom, colPseudo, colSalary, colPrime, colManager);
-        tableProgrammers.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tableProgrammers.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
     }
 
     private void loadProgrammers() {
@@ -182,7 +194,7 @@ public class JavaFXApp extends Application {
         pStart.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getStartDate().toString()));
 
         tableProjects.getColumns().addAll(pId, pName, pState, pStart);
-        tableProjects.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tableProjects.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
         tableTeam = new TableView<>();
         TableColumn<Programmer, String> tNom = new TableColumn<>("Nom");
@@ -193,7 +205,7 @@ public class JavaFXApp extends Application {
         tRole.setCellValueFactory(new PropertyValueFactory<>("username"));
 
         tableTeam.getColumns().addAll(tNom, tPrenom, tRole);
-        tableTeam.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tableTeam.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         tableTeam.setPlaceholder(new Label("Sélectionnez un projet pour voir l'équipe"));
 
         tableProjects.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
