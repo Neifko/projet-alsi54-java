@@ -193,7 +193,13 @@ public class JavaFXApp extends Application {
         TableColumn<Project, String> pStart = new TableColumn<>("Début");
         pStart.setCellValueFactory(cell -> new SimpleStringProperty(cell.getValue().getStartDate().toString()));
 
-        tableProjects.getColumns().addAll(pId, pName, pState, pStart);
+        TableColumn<Project, String> pEnd = new TableColumn<>("Fin");
+        pEnd.setCellValueFactory(cell -> {
+            var date = cell.getValue().getEndDate();
+            return new SimpleStringProperty(date != null ? date.toString() : " - ");
+        });
+
+        tableProjects.getColumns().addAll(pId, pName, pState, pStart, pEnd);
         tableProjects.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
         tableTeam = new TableView<>();
