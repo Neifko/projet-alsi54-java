@@ -84,7 +84,7 @@ public class ActionsBDDImpl implements ActionsBDD {
             pstmt.setString(4, p.getUsername());
             pstmt.setString(5, p.getManager());
             pstmt.setString(6, p.getHobby());
-            pstmt.setInt(7, p.getBirthYear()); // Correction ici : setInt
+            pstmt.setInt(7, p.getBirthYear());
             pstmt.setFloat(8, p.getSalary());
             pstmt.setFloat(9, p.getBonus());
 
@@ -179,13 +179,13 @@ public class ActionsBDDImpl implements ActionsBDD {
     private Programmer mapResultSetToProgrammer(ResultSet rs) throws SQLException {
         return new Programmer(
                 rs.getInt("id"),
-                rs.getString("name"), // lastName
-                rs.getString("first_name"), // firstName
+                rs.getString("name"),
+                rs.getString("first_name"),
                 rs.getString("address"),
                 rs.getString("username"),
-                rs.getString("manager"), // String
+                rs.getString("manager"),
                 rs.getString("hobby"),
-                rs.getInt("birth_year"), // INT
+                rs.getInt("birth_year"),
                 rs.getFloat("salary"),
                 rs.getFloat("bonus"));
     }
