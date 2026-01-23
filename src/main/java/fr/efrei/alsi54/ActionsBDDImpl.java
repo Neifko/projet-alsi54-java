@@ -173,6 +173,104 @@ public class ActionsBDDImpl implements ActionsBDD {
         return programmers;
     }
 
+    @Override
+    public int addProject(Project project) {
+        String query = "INSERT INTO projects (name, start_date, end_date, state) VALUES (?, ?, ?, ?)";
+        int generatedId = -1;
+
+        try (Connection conn = db.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
+
+            pstmt.setString(1, project.getName());
+
+            java.util.Date utilStart = project.getStartDate();
+            if (utilStart == null) {
+                throw new IllegalArgumentException("startDate cannot be null");
+            }
+            pstmt.setDate(2, new java.sql.Date(utilStart.getTime()));
+
+            java.util.Date utilEnd = project.getEndDate();
+            if (utilEnd != null) {
+                pstmt.setDate(3, new java.sql.Date(utilEnd.getTime()));
+            } else {
+                pstmt.setNull(3, Types.DATE);
+            }
+
+            pstmt.setString(4, project.getState());
+
+            int rows = pstmt.executeUpdate();
+            if (rows > 0) {
+                try (ResultSet rs = pstmt.getGeneratedKeys()) {
+                    if (rs.next()) generatedId = rs.getInt(1);
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Erreur SQL (addProject) : " + e.getMessage());
+        }
+
+        return generatedId;
+    }
+
+
+    @Override
+    public void deleteProject(int id) {
+        String deleteLinks = "DELETE FROM programmer_project WHERE project_id = ?";
+        String deleteProject = "DELETE FROM projects WHERE id = ?";
+
+        try (Connection conn = db.getConnection()) {
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement ps1 = conn.prepareStatement(deleteLinks)) {
+                ps1.setInt(1, id);
+                ps1.executeUpdate();
+            }
+
+            try (PreparedStatement ps2 = conn.prepareStatement(deleteProject)) {
+                ps2.setInt(1, id);
+                ps2.executeUpdate();
+            }
+
+            conn.commit();
+        } catch (SQLException e) {
+            System.err.println("Erreur SQL (deleteProject) : " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void addProgrammerToProject(int programmerId, int projectId) {
+        String query = "INSERT INTO programmer_project (programmer_id, project_id) VALUES (?, ?)";
+
+        try (Connection conn = db.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+            pstmt.setInt(1, programmerId);
+            pstmt.setInt(2, projectId);
+            pstmt.executeUpdate();
+
+        } catch (SQLIntegrityConstraintViolationException e) {
+            System.err.println("Link already exists or invalid FK (addProgrammerToProject): " + e.getMessage());
+        } catch (SQLException e) {
+            System.err.println("Erreur SQL (addProgrammerToProject) : " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void removeProgrammerFromProject(int programmerId, int projectId) {
+        String query = "DELETE FROM programmer_project WHERE programmer_id = ? AND project_id = ?";
+
+        try (Connection conn = db.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+            pstmt.setInt(1, programmerId);
+            pstmt.setInt(2, projectId);
+            pstmt.executeUpdate();
+
+        } catch (SQLException e) {
+            System.err.println("Erreur SQL (removeProgrammerFromProject) : " + e.getMessage());
+        }
+    }
+
     /**
      * Helper pour éviter la duplication de code lors de la lecture d'un programmeur
      */
@@ -189,4 +287,6 @@ public class ActionsBDDImpl implements ActionsBDD {
                 rs.getFloat("salary"),
                 rs.getFloat("bonus"));
     }
+
+
 }

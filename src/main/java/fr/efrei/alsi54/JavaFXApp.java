@@ -91,8 +91,33 @@ public class JavaFXApp extends Application {
         Button btnAdd = createStyledButton("➕  Ajouter Prog.");
         Button btnDelete = createStyledButton("🗑  Supprimer Prog.");
         Button btnSalary = createStyledButton("💰  Modifier Salaire");
+        Separator sep2 = new Separator();
+        sep2.setOpacity(0.3);
 
-        menu.getChildren().addAll(lblTitle, btnProgrammers, btnProjects, sep, btnAdd, btnDelete, btnSalary);
+        Button btnAddProject = createStyledButton("➕  Ajouter Projet");
+        Button btnDeleteProject = createStyledButton("🗑  Supprimer Projet");
+
+        Separator sep3 = new Separator();
+        sep3.setOpacity(0.3);
+
+        Button btnAssignProgToProject = createStyledButton("➕  Ajouter au Projet");
+        Button btnRemoveProgFromProject = createStyledButton("➖  Retirer du Projet");
+
+        menu.getChildren().addAll(
+                lblTitle,
+                btnProgrammers,
+                btnProjects,
+                sep,
+                btnAdd,
+                btnDelete,
+                btnSalary,
+                sep2,
+                btnAddProject,
+                btnDeleteProject,
+                sep3,
+                btnAssignProgToProject,
+                btnRemoveProgFromProject
+        );
 
         btnProgrammers.setOnAction(e -> {
             loadProgrammers();
@@ -117,6 +142,26 @@ public class JavaFXApp extends Application {
         btnSalary.setOnAction(e -> {
             root.setCenter(tableProgrammers);
             showUpdateSalaryDialog();
+        });
+
+        btnAddProject.setOnAction(e -> {
+            root.setCenter(projectView);
+            showAddProjectDialog();
+        });
+
+        btnDeleteProject.setOnAction(e -> {
+            root.setCenter(projectView);
+            deleteSelectedProject();
+        });
+
+        btnAssignProgToProject.setOnAction(e -> {
+            root.setCenter(projectView);
+            showAddProgrammerToProjectDialog();
+        });
+
+        btnRemoveProgFromProject.setOnAction(e -> {
+            root.setCenter(projectView);
+            removeSelectedProgrammerFromSelectedProject();
         });
 
         return menu;
@@ -214,12 +259,7 @@ public class JavaFXApp extends Application {
         tableTeam.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         tableTeam.setPlaceholder(new Label("Sélectionnez un projet pour voir l'équipe"));
 
-        tableProjects.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal != null) {
-                var team = actions.getProgrammersByProject(newVal.getId());
-                tableTeam.setItems(FXCollections.observableArrayList(team));
-            }
-        });
+        tableProjects.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> refreshTeamForSelectedProject());
 
         VBox topBox = new VBox(5, new Label("LISTE DES PROJETS"), tableProjects);
         topBox.setPadding(new Insets(10));
@@ -306,13 +346,52 @@ public class JavaFXApp extends Application {
 
         dialog.setResultConverter(btn -> {
             if (btn == okBtn) {
+                if (nom.getText().isBlank() || prenom.getText().isBlank() || pseudo.getText().isBlank()
+                        || annee.getText().isBlank() || salaire.getText().isBlank() || prime.getText().isBlank()) {
+                    showAlert("Champs manquants", "Les champs marqués par * et Salaire/Prime sont obligatoires.");
+                    return null;
+                }
+
+                int year;
                 try {
+                    year = Integer.parseInt(annee.getText().trim());
+                    int currentYear = java.time.Year.now().getValue();
+                    if (year < 1800 || year > currentYear) {
+                        showAlert("Année invalide", "Année de naissance doit être entre 1800 et " + currentYear + ".");
+                        return null;
+                    }
+                } catch (NumberFormatException e) {
+                    showAlert("Année invalide", "Année de naissance doit être un entier (YYYY).");
+                    return null;
+                }
+
+                String decimalPattern = "^\\d{1,8}(\\.\\d{1,2})?$";
+                String sSalaire = salaire.getText().trim();
+                String sPrime = prime.getText().trim();
+
+                if (!sSalaire.matches(decimalPattern)) {
+                    showAlert("Salaire invalide", "Salaire doit être numérique (max 8 chiffres avant la virgule, jusqu'à 2 décimales).");
+                    return null;
+                }
+                if (!sPrime.matches(decimalPattern)) {
+                    showAlert("Prime invalide", "Prime doit être numérique (max 8 chiffres avant la virgule, jusqu'à 2 décimales).");
+                    return null;
+                }
+
+                try {
+                    float fSalaire = Float.parseFloat(sSalaire);
+                    float fPrime = Float.parseFloat(sPrime);
+                    if (fSalaire < 0 || fSalaire > 99_999_999.99f || fPrime < 0 || fPrime > 99_999_999.99f) {
+                        showAlert("Valeur trop grande", "Salaire/Prime dépassent la limite autorisée par la base de données.");
+                        return null;
+                    }
+
                     return new Programmer(
                             nom.getText(), prenom.getText(), adresse.getText(), pseudo.getText(),
                             manager.getText(), hobby.getText(),
-                            Integer.parseInt(annee.getText()),
-                            Float.parseFloat(salaire.getText()),
-                            Float.parseFloat(prime.getText()));
+                            year,
+                            fSalaire,
+                            fPrime);
                 } catch (Exception e) {
                     showAlert("Format Invalide", "Vérifiez les champs numériques (Année, Salaire, Prime).");
                 }
@@ -325,6 +404,7 @@ public class JavaFXApp extends Application {
             loadProgrammers();
         });
     }
+
 
     private void showUpdateSalaryDialog() {
         Programmer selected = tableProgrammers.getSelectionModel().getSelectedItem();
@@ -346,6 +426,201 @@ public class JavaFXApp extends Application {
                 showAlert("Erreur", "Montant invalide.");
             }
         });
+    }
+
+    private void showAddProjectDialog() {
+        Dialog<Project> dialog = new Dialog<>();
+        dialog.setTitle("Nouveau Projet");
+        dialog.setHeaderText("Création d'un projet");
+
+        ButtonType okBtn = new ButtonType("Valider", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(okBtn, ButtonType.CANCEL);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 50, 10, 10));
+
+        TextField name = new TextField();
+        name.setPromptText("Nom du projet");
+
+        TextField state = new TextField();
+        state.setPromptText("État (ex: En cours, Terminé, Planifié)");
+
+        javafx.scene.control.DatePicker startDatePicker = new javafx.scene.control.DatePicker();
+        startDatePicker.setPromptText("Date de début");
+
+        javafx.scene.control.DatePicker endDatePicker = new javafx.scene.control.DatePicker();
+        endDatePicker.setPromptText("Date de fin (optionnel)");
+
+        grid.add(new Label("Nom *"), 0, 0);
+        grid.add(name, 1, 0);
+        grid.add(new Label("État *"), 0, 1);
+        grid.add(state, 1, 1);
+        grid.add(new Label("Date début *"), 0, 2);
+        grid.add(startDatePicker, 1, 2);
+        grid.add(new Label("Date fin"), 0, 3);
+        grid.add(endDatePicker, 1, 3);
+
+        dialog.getDialogPane().setContent(grid);
+
+        dialog.setResultConverter(btn -> {
+            if (btn != okBtn) return null;
+
+            if (name.getText().isBlank() || state.getText().isBlank() || startDatePicker.getValue() == null) {
+                showAlert("Champs manquants", "Le nom, l'état et la date de début sont obligatoires.");
+                return null;
+            }
+
+            java.time.LocalDate startLd = startDatePicker.getValue();
+            java.time.LocalDate endLd = endDatePicker.getValue();
+
+            if (endLd != null && endLd.isBefore(startLd)) {
+                showAlert("Dates invalides", "La date de fin ne peut pas être avant la date de début.");
+                return null;
+            }
+
+            java.util.Date startUtil = java.util.Date.from(
+                    startLd.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant()
+            );
+            java.util.Date endUtil = (endLd != null)
+                    ? java.util.Date.from(endLd.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant())
+                    : null;
+
+            return new Project(
+                    0,
+                    name.getText().trim(),
+                    startUtil,
+                    endUtil,
+                    state.getText().trim()
+            );
+        });
+
+        dialog.showAndWait().ifPresent(p -> {
+            actions.addProject(p);
+            loadProjects();
+        });
+    }
+
+    private void deleteSelectedProject() {
+        Project selected = tableProjects.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showAlert("Erreur", "Veuillez sélectionner un projet dans le tableau.");
+            return;
+        }
+
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Confirmation");
+        confirm.setHeaderText("Supprimer le projet \"" + selected.getName() + "\" ?");
+        confirm.setContentText("Cette action est irréversible.");
+
+        if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+            actions.deleteProject(selected.getId());
+            loadProjects();
+        }
+    }
+
+    private void refreshTeamForSelectedProject() {
+        Project selected = tableProjects.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            tableTeam.getItems().clear();
+            return;
+        }
+        var team = actions.getProgrammersByProject(selected.getId());
+        tableTeam.setItems(FXCollections.observableArrayList(team));
+    }
+
+    private void showAddProgrammerToProjectDialog() {
+        Project selectedProject = tableProjects.getSelectionModel().getSelectedItem();
+        if (selectedProject == null) {
+            showAlert("Erreur", "Veuillez sélectionner un projet.");
+            return;
+        }
+
+        java.util.List<Programmer> all = actions.getAllProgrammers();
+        if (all == null || all.isEmpty()) {
+            showAlert("Erreur", "Aucun programmeur disponible.");
+            return;
+        }
+
+        Dialog<Programmer> dialog = new Dialog<>();
+        dialog.setTitle("Affecter un programmeur");
+        dialog.setHeaderText("Ajouter un programmeur au projet : " + selectedProject.getName());
+
+        ButtonType okBtn = new ButtonType("Valider", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(okBtn, ButtonType.CANCEL);
+
+        javafx.scene.control.ComboBox<Programmer> combo =
+                new javafx.scene.control.ComboBox<>(FXCollections.observableArrayList(all));
+        combo.setMaxWidth(Double.MAX_VALUE);
+        combo.setPromptText("Sélectionnez un programmeur");
+
+        combo.setCellFactory(list -> new javafx.scene.control.ListCell<>() {
+            @Override
+            protected void updateItem(Programmer item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.getLastName() + " " + item.getFirstName() + " (" + item.getUsername() + ")");
+                }
+            }
+        });
+
+        combo.setButtonCell(new javafx.scene.control.ListCell<>() {
+            @Override
+            protected void updateItem(Programmer item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.getLastName() + " " + item.getFirstName() + " (" + item.getUsername() + ")");
+                }
+            }
+        });
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 50, 10, 10));
+        grid.add(new Label("Programmeur *"), 0, 0);
+        grid.add(combo, 1, 0);
+
+        dialog.getDialogPane().setContent(grid);
+        dialog.setResultConverter(btn -> btn == okBtn ? combo.getValue() : null);
+
+        dialog.showAndWait().ifPresent(p -> {
+            if (p == null) {
+                showAlert("Champs manquants", "Veuillez sélectionner un programmeur.");
+                return;
+            }
+            actions.addProgrammerToProject(p.getId(), selectedProject.getId());
+            refreshTeamForSelectedProject();
+        });
+    }
+
+    private void removeSelectedProgrammerFromSelectedProject() {
+        Project selectedProject = tableProjects.getSelectionModel().getSelectedItem();
+        if (selectedProject == null) {
+            showAlert("Erreur", "Veuillez sélectionner un projet.");
+            return;
+        }
+
+        Programmer selectedProgrammer = tableTeam.getSelectionModel().getSelectedItem();
+        if (selectedProgrammer == null) {
+            showAlert("Erreur", "Veuillez sélectionner un programmeur dans l'équipe du projet.");
+            return;
+        }
+
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Confirmation");
+        confirm.setHeaderText("Retirer " + selectedProgrammer.getFirstName() + " du projet \"" + selectedProject.getName() + "\" ?");
+        confirm.setContentText("Cette action supprime l'affectation.");
+
+        if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+            actions.removeProgrammerFromProject(selectedProgrammer.getId(), selectedProject.getId());
+            refreshTeamForSelectedProject();
+        }
     }
 
     private void showAlert(String title, String content) {
