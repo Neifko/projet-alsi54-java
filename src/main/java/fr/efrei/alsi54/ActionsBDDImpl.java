@@ -8,6 +8,9 @@ public class ActionsBDDImpl implements ActionsBDD {
 
     private final Database db = Database.getInstance();
 
+    /**
+     * @return List<Programmer>
+     */
     @Override
     public List<Programmer> getAllProgrammers() {
         List<Programmer> programmers = new ArrayList<>();
@@ -27,6 +30,10 @@ public class ActionsBDDImpl implements ActionsBDD {
         return programmers;
     }
 
+    /**
+     * @param id
+     * @return Programmer
+     */
     @Override
     public Programmer getProgrammerById(int id) {
         String query = "SELECT * FROM programmers WHERE id = ?";
@@ -48,6 +55,9 @@ public class ActionsBDDImpl implements ActionsBDD {
         return programmer;
     }
 
+    /**
+     * @param id
+     */
     @Override
     public void deleteProgrammer(int id) {
         String query = "DELETE FROM programmers WHERE id = ?";
@@ -69,9 +79,12 @@ public class ActionsBDDImpl implements ActionsBDD {
         }
     }
 
+    /**
+     * @param p
+     * @return int
+     */
     @Override
     public int addProgrammer(Programmer p) {
-        // Attention : birth_year est un INT dans la base
         String query = "INSERT INTO programmers (name, first_name, address, username, manager, hobby, birth_year, salary, bonus) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         int generatedId = -1;
 
@@ -104,6 +117,10 @@ public class ActionsBDDImpl implements ActionsBDD {
         return generatedId;
     }
 
+    /**
+     * @param programmerId
+     * @param newSalary
+     */
     @Override
     public void updateSalary(int programmerId, float newSalary) {
         String query = "UPDATE programmers SET salary = ? WHERE id = ?";
@@ -126,6 +143,9 @@ public class ActionsBDDImpl implements ActionsBDD {
         }
     }
 
+    /**
+     * @return List<Project>
+     */
     @Override
     public List<Project> getAllProjects() {
         List<Project> projects = new ArrayList<>();
@@ -150,6 +170,10 @@ public class ActionsBDDImpl implements ActionsBDD {
         return projects;
     }
 
+    /**
+     * @param projectId
+     * @return List<Programmer>
+     */
     @Override
     public List<Programmer> getProgrammersByProject(int projectId) {
         List<Programmer> programmers = new ArrayList<>();
@@ -173,13 +197,17 @@ public class ActionsBDDImpl implements ActionsBDD {
         return programmers;
     }
 
+    /**
+     * @param project
+     * @return int
+     */
     @Override
     public int addProject(Project project) {
         String query = "INSERT INTO projects (name, start_date, end_date, state) VALUES (?, ?, ?, ?)";
         int generatedId = -1;
 
         try (Connection conn = db.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
+                PreparedStatement pstmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
 
             pstmt.setString(1, project.getName());
 
@@ -201,7 +229,8 @@ public class ActionsBDDImpl implements ActionsBDD {
             int rows = pstmt.executeUpdate();
             if (rows > 0) {
                 try (ResultSet rs = pstmt.getGeneratedKeys()) {
-                    if (rs.next()) generatedId = rs.getInt(1);
+                    if (rs.next())
+                        generatedId = rs.getInt(1);
                 }
             }
 
@@ -212,7 +241,9 @@ public class ActionsBDDImpl implements ActionsBDD {
         return generatedId;
     }
 
-
+    /**
+     * @param id
+     */
     @Override
     public void deleteProject(int id) {
         String deleteLinks = "DELETE FROM programmer_project WHERE project_id = ?";
@@ -237,12 +268,16 @@ public class ActionsBDDImpl implements ActionsBDD {
         }
     }
 
+    /**
+     * @param programmerId
+     * @param projectId
+     */
     @Override
     public void addProgrammerToProject(int programmerId, int projectId) {
         String query = "INSERT INTO programmer_project (programmer_id, project_id) VALUES (?, ?)";
 
         try (Connection conn = db.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
+                PreparedStatement pstmt = conn.prepareStatement(query)) {
 
             pstmt.setInt(1, programmerId);
             pstmt.setInt(2, projectId);
@@ -255,12 +290,16 @@ public class ActionsBDDImpl implements ActionsBDD {
         }
     }
 
+    /**
+     * @param programmerId
+     * @param projectId
+     */
     @Override
     public void removeProgrammerFromProject(int programmerId, int projectId) {
         String query = "DELETE FROM programmer_project WHERE programmer_id = ? AND project_id = ?";
 
         try (Connection conn = db.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
+                PreparedStatement pstmt = conn.prepareStatement(query)) {
 
             pstmt.setInt(1, programmerId);
             pstmt.setInt(2, projectId);
@@ -287,6 +326,5 @@ public class ActionsBDDImpl implements ActionsBDD {
                 rs.getFloat("salary"),
                 rs.getFloat("bonus"));
     }
-
 
 }

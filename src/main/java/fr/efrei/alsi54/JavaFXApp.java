@@ -41,10 +41,16 @@ public class JavaFXApp extends Application {
     private TableView<Project> tableProjects;
     private TableView<Programmer> tableTeam;
 
+    /**
+     * @param args
+     */
     public static void main(String[] args) {
         launch(args);
     }
 
+    /**
+     * @param primaryStage
+     */
     @Override
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Gestion Programmeurs 2025");
@@ -65,12 +71,18 @@ public class JavaFXApp extends Application {
         primaryStage.show();
     }
 
+    /**
+     * @throws Exception
+     */
     @Override
     public void stop() throws Exception {
         Database.getInstance().closeConnection();
         super.stop();
     }
 
+    /**
+     * @return VBox
+     */
     private VBox createSideMenu() {
         VBox menu = new VBox(15);
         menu.setPadding(new Insets(20));
@@ -116,8 +128,7 @@ public class JavaFXApp extends Application {
                 btnDeleteProject,
                 sep3,
                 btnAssignProgToProject,
-                btnRemoveProgFromProject
-        );
+                btnRemoveProgFromProject);
 
         btnProgrammers.setOnAction(e -> {
             loadProgrammers();
@@ -167,6 +178,10 @@ public class JavaFXApp extends Application {
         return menu;
     }
 
+    /**
+     * @param text
+     * @return Button
+     */
     private Button createStyledButton(String text) {
         Button btn = new Button(text);
         btn.setMaxWidth(Double.MAX_VALUE);
@@ -259,7 +274,8 @@ public class JavaFXApp extends Application {
         tableTeam.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         tableTeam.setPlaceholder(new Label("Sélectionnez un projet pour voir l'équipe"));
 
-        tableProjects.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> refreshTeamForSelectedProject());
+        tableProjects.getSelectionModel().selectedItemProperty()
+                .addListener((obs, oldVal, newVal) -> refreshTeamForSelectedProject());
 
         VBox topBox = new VBox(5, new Label("LISTE DES PROJETS"), tableProjects);
         topBox.setPadding(new Insets(10));
@@ -370,11 +386,13 @@ public class JavaFXApp extends Application {
                 String sPrime = prime.getText().trim();
 
                 if (!sSalaire.matches(decimalPattern)) {
-                    showAlert("Salaire invalide", "Salaire doit être numérique (max 8 chiffres avant la virgule, jusqu'à 2 décimales).");
+                    showAlert("Salaire invalide",
+                            "Salaire doit être numérique (max 8 chiffres avant la virgule, jusqu'à 2 décimales).");
                     return null;
                 }
                 if (!sPrime.matches(decimalPattern)) {
-                    showAlert("Prime invalide", "Prime doit être numérique (max 8 chiffres avant la virgule, jusqu'à 2 décimales).");
+                    showAlert("Prime invalide",
+                            "Prime doit être numérique (max 8 chiffres avant la virgule, jusqu'à 2 décimales).");
                     return null;
                 }
 
@@ -382,7 +400,8 @@ public class JavaFXApp extends Application {
                     float fSalaire = Float.parseFloat(sSalaire);
                     float fPrime = Float.parseFloat(sPrime);
                     if (fSalaire < 0 || fSalaire > 99_999_999.99f || fPrime < 0 || fPrime > 99_999_999.99f) {
-                        showAlert("Valeur trop grande", "Salaire/Prime dépassent la limite autorisée par la base de données.");
+                        showAlert("Valeur trop grande",
+                                "Salaire/Prime dépassent la limite autorisée par la base de données.");
                         return null;
                     }
 
@@ -404,7 +423,6 @@ public class JavaFXApp extends Application {
             loadProgrammers();
         });
     }
-
 
     private void showUpdateSalaryDialog() {
         Programmer selected = tableProgrammers.getSelectionModel().getSelectedItem();
@@ -465,7 +483,8 @@ public class JavaFXApp extends Application {
         dialog.getDialogPane().setContent(grid);
 
         dialog.setResultConverter(btn -> {
-            if (btn != okBtn) return null;
+            if (btn != okBtn)
+                return null;
 
             if (name.getText().isBlank() || state.getText().isBlank() || startDatePicker.getValue() == null) {
                 showAlert("Champs manquants", "Le nom, l'état et la date de début sont obligatoires.");
@@ -481,8 +500,7 @@ public class JavaFXApp extends Application {
             }
 
             java.util.Date startUtil = java.util.Date.from(
-                    startLd.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant()
-            );
+                    startLd.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
             java.util.Date endUtil = (endLd != null)
                     ? java.util.Date.from(endLd.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant())
                     : null;
@@ -492,8 +510,7 @@ public class JavaFXApp extends Application {
                     name.getText().trim(),
                     startUtil,
                     endUtil,
-                    state.getText().trim()
-            );
+                    state.getText().trim());
         });
 
         dialog.showAndWait().ifPresent(p -> {
@@ -550,8 +567,8 @@ public class JavaFXApp extends Application {
         ButtonType okBtn = new ButtonType("Valider", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(okBtn, ButtonType.CANCEL);
 
-        javafx.scene.control.ComboBox<Programmer> combo =
-                new javafx.scene.control.ComboBox<>(FXCollections.observableArrayList(all));
+        javafx.scene.control.ComboBox<Programmer> combo = new javafx.scene.control.ComboBox<>(
+                FXCollections.observableArrayList(all));
         combo.setMaxWidth(Double.MAX_VALUE);
         combo.setPromptText("Sélectionnez un programmeur");
 
@@ -614,7 +631,8 @@ public class JavaFXApp extends Application {
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("Confirmation");
-        confirm.setHeaderText("Retirer " + selectedProgrammer.getFirstName() + " du projet \"" + selectedProject.getName() + "\" ?");
+        confirm.setHeaderText(
+                "Retirer " + selectedProgrammer.getFirstName() + " du projet \"" + selectedProject.getName() + "\" ?");
         confirm.setContentText("Cette action supprime l'affectation.");
 
         if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
@@ -623,6 +641,10 @@ public class JavaFXApp extends Application {
         }
     }
 
+    /**
+     * @param title
+     * @param content
+     */
     private void showAlert(String title, String content) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title);
